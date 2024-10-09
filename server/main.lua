@@ -1,5 +1,5 @@
 local QBCore = exports['qb-core']:GetCoreObject()
-local spawnedAnimals = {} 
+local spawnedAnimals = {}
 
 local function ServerNotify(source, message, type)
     if Config.NotificationSystem == "qb" then
@@ -80,7 +80,7 @@ AddEventHandler('SkapHunting:startHunting', function()
 
     if Player.Functions.GetItemByName('hunting_license') then
         ServerNotify(src, Config.HuntStart, "success")
-        TriggerClientEvent('SkapHunting:startHunting', src) 
+        TriggerClientEvent('SkapHunting:startHunting', src)
     else
         ServerNotify(src, Config.NeedLicens, "error")
     end
@@ -92,7 +92,7 @@ AddEventHandler('SkapHunting:stopHunting', function()
     local Player = QBCore.Functions.GetPlayer(src)
     ServerNotify(src, "Jakten har avslutats.", "error")
     TriggerClientEvent('SkapHunting:stopHunting', src)
-    sendToDiscord(Config.LogHuntStopped, Player.PlayerData.name .. " Has ended a hunting session", 15158332) 
+    sendToDiscord(Config.LogHuntStopped, Player.PlayerData.name .. " Has ended a hunting session", 15158332)
 end)
 
 RegisterNetEvent('SkapHunting:buyLicense')
