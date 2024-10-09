@@ -231,14 +231,12 @@ function spawnAnimalsInZone(zone)
     for i = 1, Config.MaxAnimalSpawns do
         local randomX, randomY, spawnCoords
 
-        -- Ensure animals don't spawn too close to the player
         repeat
             randomX = math.random(-zone.radius, zone.radius)
             randomY = math.random(-zone.radius, zone.radius)
             spawnCoords = vector3(zone.coords.x + randomX, zone.coords.y + randomY, zone.minZ)
         until #(playerCoords - spawnCoords) > 50.0 and (randomX^2 + randomY^2) <= zone.radius^2
 
-        -- Ground check to prevent animals spawning in the air
         local foundGround, groundZ = GetGroundZFor_3dCoord(spawnCoords.x, spawnCoords.y, zone.maxZ)
         if foundGround then
             spawnCoords = vector3(spawnCoords.x, spawnCoords.y, groundZ)
@@ -266,7 +264,6 @@ function spawnAnimalsInZone(zone)
 
                 local animal = CreatePed(5, animalModel, spawnCoords.x, spawnCoords.y, spawnCoords.z, 0.0, true, true)
 
-                -- Create blip for the animal
                 local animalBlip = AddBlipForEntity(animal)
                 SetBlipSprite(animalBlip, 141)
                 SetBlipDisplay(animalBlip, 4)
