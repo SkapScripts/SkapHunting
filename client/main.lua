@@ -5,7 +5,6 @@ local animalBlips = {}
 local huntingZoneBlips = {}
 local spawnedAnimals = {}
 
-
 Citizen.CreateThread(function()
     spawnHuntingNPCs()
     spawnLicensNPCs()
@@ -15,6 +14,14 @@ end)
 local function GeneratePlate()
     local plate = QBCore.Shared.RandomInt(1) .. QBCore.Shared.RandomStr(3) .. QBCore.Shared.RandomInt(3) .. QBCore.Shared.RandomStr(0)
     return plate:upper()
+end
+
+local function Notify(message, type)
+    if Config.NotificationSystem == "qb" then
+        QBCore.Functions.Notify(message, type)
+    elseif Config.NotificationSystem == "ox" then
+        exports['ox_lib']:notify({description = message, type = type})
+    end
 end
 
 function removeHuntingZoneBlips()
@@ -102,9 +109,9 @@ AddEventHandler('SkapHunting:returnVehicleClient', function()
     
     if vehicle and vehicle ~= 0 then
         DeleteVehicle(vehicle)
-        TriggerEvent('QBCore:Notify', Config.Returned, "success")
+        Notify(Config.Returned, "success")
     else
-        TriggerEvent('QBCore:Notify', Config.NotinVehicle, "error")
+        Notify(Config.NotinVehicle, "error")
     end
 end)
 
@@ -173,13 +180,13 @@ end)
 RegisterNetEvent('SkapHunting:startHuntingClient')
 AddEventHandler('SkapHunting:startHuntingClient', function()
     isHunting = true
-    TriggerEvent('QBCore:Notify', Config.HuntStart, "success")
+    Notify(Config.HuntStart, "success")
     createHuntingZoneBlips() 
 end)
 
 function stopHunting()
     isHunting = false
-    TriggerEvent('QBCore:Notify', Config.HuntStopped, "error")
+    Notify(Config.HuntStopped, "error")
     removeAllAnimalBlips()
     removeHuntingZoneBlips()
 end
@@ -191,28 +198,52 @@ function removeAllAnimalBlips()
     animalBlips = {}
 end
 
+function startHunting()
+    isHunting = true
+    Notify(Config.HuntStart, "success")
+    createHuntingZoneBlips() 
+
+    for _, zone in pairs(Config.HuntingZones) do
+        spawnAnimalsInZone(zone)
+    end
+
+    Citizen.CreateThread(function()
+        while isHunting do
+            Wait(10000) 
+        end
+    end)
+end
+
+RegisterNetEvent('SkapHunting:startHuntingClient')
+AddEventHandler('SkapHunting:startHuntingClient', function()
+    startHunting()
+end)
+
+
 function spawnAnimalsInZone(zone)
     if not Config.Animals then
         print('Error: ', Config.NilValue)
         return
     end
 
-    for i = 1, Config.MaxAnimalSpawns do
-        local randomX, randomY
+    local playerCoords = GetEntityCoords(PlayerPedId())
 
+    for i = 1, Config.MaxAnimalSpawns do
+        local randomX, randomY, spawnCoords
+
+        -- Ensure animals don't spawn too close to the player
         repeat
             randomX = math.random(-zone.radius, zone.radius)
             randomY = math.random(-zone.radius, zone.radius)
-        until (randomX ^ 2 + randomY ^ 2) <= zone.radius ^ 2 
+            spawnCoords = vector3(zone.coords.x + randomX, zone.coords.y + randomY, zone.minZ)
+        until #(playerCoords - spawnCoords) > 50.0 and (randomX^2 + randomY^2) <= zone.radius^2
 
-        local spawnCoords = vector3(zone.coords.x + randomX, zone.coords.y + randomY, zone.minZ)
-
-        -- Check if the Z coordinate is within minZ and maxZ range
+        -- Ground check to prevent animals spawning in the air
         local foundGround, groundZ = GetGroundZFor_3dCoord(spawnCoords.x, spawnCoords.y, zone.maxZ)
         if foundGround then
             spawnCoords = vector3(spawnCoords.x, spawnCoords.y, groundZ)
         else
-            spawnCoords = vector3(spawnCoords.x, spawnCoords.y, zone.minZ) -- Use minZ if ground not found
+            spawnCoords = vector3(spawnCoords.x, spawnCoords.y, zone.minZ)
         end
 
         if not isPlayerNearPlayerCoords(spawnCoords.x, spawnCoords.y) then
@@ -235,7 +266,7 @@ function spawnAnimalsInZone(zone)
 
                 local animal = CreatePed(5, animalModel, spawnCoords.x, spawnCoords.y, spawnCoords.z, 0.0, true, true)
 
-                -- Animal blip creation
+                -- Create blip for the animal
                 local animalBlip = AddBlipForEntity(animal)
                 SetBlipSprite(animalBlip, 141)
                 SetBlipDisplay(animalBlip, 4)
@@ -249,6 +280,7 @@ function spawnAnimalsInZone(zone)
                 table.insert(animalBlips, animalBlip)
 
                 TaskWanderStandard(animal, 10.0, 10)
+
                 if animalData.aggression then
                     TaskCombatPed(animal, PlayerPedId(), 0, 16)
                 end
@@ -266,16 +298,18 @@ function spawnAnimalsInZone(zone)
                     },
                     distance = 2.5
                 })
+
                 table.insert(spawnedAnimals, {entity = animal, type = animalType})
                 print('Spawned animal:', animalType, 'at:', spawnCoords)
             else
                 print('Error:', Config.NoAnimals)
             end
         else
-            print('Animal spawn location too close to player.') 
+            print('Animal spawn location too close to player.')
         end
     end
 end
+
 
 
 function isPlayerNearPlayerCoords(x, y)
@@ -283,7 +317,6 @@ function isPlayerNearPlayerCoords(x, y)
     local distance = #(playerCoords - vector3(x, y, playerCoords.z))
     return distance < 10.0
 end
-
 
 function skinAnimal(animalType, animal)
     local playerPed = PlayerPedId()
@@ -309,14 +342,14 @@ function skinAnimal(animalType, animal)
             if math.random(100) <= animalData.rare_chance then
                 local rareItem = animalData.rare_loot[math.random(#animalData.rare_loot)]
                 TriggerServerEvent('SkapHunting:addLoot', rareItem)
-                TriggerEvent('QBCore:Notify', Config.Founded .. rareItem .. "!", "success")
+                Notify(Config.Founded .. rareItem .. "!", "success")
             end
         end, function()
             ClearPedTasks(playerPed)
-            TriggerEvent('QBCore:Notify', Config.Caneled, "error")
+            Notify(Config.Canceled, "error")
         end)
     else
-        TriggerEvent('QBCore:Notify', Config.NeedKnife, "error")
+        Notify(Config.NeedKnife, "error")
     end
 end
 
@@ -369,7 +402,7 @@ AddEventHandler('SkapHunting:stopHunting', function()
     isHunting = false
     removeAllAnimalBlips()
     removeHuntingZoneBlips()
-    TriggerEvent('QBCore:Notify', Config.Stopped, "error")
+    Notify(Config.Stopped, "error")
 end)
 
 function spawnHuntingNPCs()
@@ -396,7 +429,7 @@ function spawnHuntingNPCs()
                         if hasLicense then
                             TriggerServerEvent('SkapHunting:startHunting')
                         else
-                            TriggerEvent('QBCore:Notify', Config.NeedLicens, "error")
+                            Notify(Config.NeedLicens, "error")
                         end
                     end)
                 end,
@@ -417,7 +450,7 @@ function spawnHuntingNPCs()
                         if hasLicense then
                             openShopMenu()
                         else
-                            TriggerEvent('QBCore:Notify', Config.NeedLicens, "error")
+                            Notify(Config.NeedLicens, "error")
                         end
                     end)
                 end,
@@ -490,7 +523,7 @@ if Config.CommandsEnabled then
         if isHunting then 
             stopHunting() 
         else 
-            TriggerEvent('QBCore:Notify', Config.NotActive, "error") 
+            Notify(Config.NotActive, "error") 
         end 
     end, false)
 end

@@ -1,6 +1,14 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 local spawnedAnimals = {} 
 
+local function ServerNotify(source, message, type)
+    if Config.NotificationSystem == "qb" then
+        TriggerClientEvent('QBCore:Notify', source, message, type)
+    elseif Config.NotificationSystem == "ox" then
+        TriggerClientEvent('ox_lib:notify', source, {description = message, type = type})
+    end
+end
+
 local function sendToDiscord(name, message, color)
     local embed = {
         {
@@ -27,7 +35,7 @@ QBCore.Functions.CreateCallback('SkapHunting:hasLicense', function(source, cb)
             if currentDate < expiryDate then
                 cb(true) 
             else
-                TriggerClientEvent('QBCore:Notify', source, "Din jaktlicens har gått ut!", "error")
+                ServerNotify(source, "Din jaktlicens har gått ut!", "error")
                 cb(false) 
             end
         else
@@ -44,7 +52,7 @@ AddEventHandler('SkapHunting:spawnAnimals', function()
     local Player = QBCore.Functions.GetPlayer(src)
 
     if #spawnedAnimals >= Config.MaxAnimalSpawns then
-        TriggerClientEvent('QBCore:Notify', src, Config.EnoughAnimals, "error")
+        ServerNotify(src, Config.EnoughAnimals, "error")
         return
     end
 
@@ -56,7 +64,7 @@ AddEventHandler('SkapHunting:spawnAnimals', function()
     end
 
     if #animalTypes == 0 then
-        TriggerClientEvent('QBCore:Notify', src, Config.NoAnimals, "error")
+        ServerNotify(src, Config.NoAnimals, "error")
         return
     end
 
@@ -71,10 +79,10 @@ AddEventHandler('SkapHunting:startHunting', function()
     local Player = QBCore.Functions.GetPlayer(src)
 
     if Player.Functions.GetItemByName('hunting_license') then
-        TriggerClientEvent('QBCore:Notify', src, Config.HuntStart, "success")
+        ServerNotify(src, Config.HuntStart, "success")
         TriggerClientEvent('SkapHunting:startHunting', src) 
     else
-        TriggerClientEvent('QBCore:Notify', src, Config.NeedLicens, "error")
+        ServerNotify(src, Config.NeedLicens, "error")
     end
 end)
 
@@ -82,7 +90,7 @@ RegisterNetEvent('SkapHunting:stopHunting')
 AddEventHandler('SkapHunting:stopHunting', function()
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
-    TriggerClientEvent('QBCore:Notify', src, "Jakten har avslutats.", "error")
+    ServerNotify(src, "Jakten har avslutats.", "error")
     TriggerClientEvent('SkapHunting:stopHunting', src)
     sendToDiscord(Config.LogHuntStopped, Player.PlayerData.name .. " Has ended a hunting session", 15158332) 
 end)
@@ -95,10 +103,10 @@ AddEventHandler('SkapHunting:buyLicense', function()
     if Player.PlayerData.money.cash >= Config.LicensePrice then
         Player.Functions.RemoveMoney(Config.Money, Config.LicensePrice)
         Player.Functions.AddItem('hunting_license', 1)
-        TriggerClientEvent('QBCore:Notify', src, Config.BoughtLicens, "success")
+        ServerNotify(src, Config.BoughtLicens, "success")
         sendToDiscord("Licens Köpt", Player.PlayerData.name .. " köpte en jaktlicens för $" .. Config.LicensePrice, 3447003) 
     else
-        TriggerClientEvent('QBCore:Notify', src, Config.NotEnoughMoney, "error")
+        ServerNotify(src, Config.NotEnoughMoney, "error")
     end
 end)
 
@@ -108,12 +116,11 @@ AddEventHandler('SkapHunting:addLoot', function(item)
     local Player = QBCore.Functions.GetPlayer(src)
 
     if Player.Functions.AddItem(item, 1) then
-        TriggerClientEvent('QBCore:Notify', src, Config.Yougot .. item .. " " .. Config.FromAnimal, "success")
+        ServerNotify(src, Config.Yougot .. item .. " " .. Config.FromAnimal, "success")
     else
-        TriggerClientEvent('QBCore:Notify', src, Config.Notspace .. item .. ".", "error")
+        ServerNotify(src, Config.Notspace .. item .. ".", "error")
     end
 end)
-
 
 RegisterNetEvent('SkapHunting:removeAnimal')
 AddEventHandler('SkapHunting:removeAnimal', function(animalType)
@@ -125,27 +132,6 @@ AddEventHandler('SkapHunting:removeAnimal', function(animalType)
     end
 end)
 
-RegisterNetEvent('SkapHunting:spawnAnimals')
-AddEventHandler('SkapHunting:spawnAnimals', function()
-    local src = source
-    local Player = QBCore.Functions.GetPlayer(src)
-    
-    if #spawnedAnimals >= Config.MaxAnimalSpawns then
-        TriggerClientEvent('QBCore:Notify', src, Config.EnoughAnimals, "error")
-        return
-    end
-    
-    local animalTypes = {}
-    for animal, _ in pairs(Config.Animals) do
-        table.insert(animalTypes, animal)
-    end
-    local animalType = animalTypes[math.random(#animalTypes)]
-    
-    TriggerClientEvent('SkapHunting:spawnAnimals', src, animalType)
-    table.insert(spawnedAnimals, animalType) 
-end)
-
-
 RegisterNetEvent('SkapHunting:spawnVehicle')
 AddEventHandler('SkapHunting:spawnVehicle', function()
     local src = source
@@ -154,7 +140,6 @@ AddEventHandler('SkapHunting:spawnVehicle', function()
 
     TriggerClientEvent('SkapHunting:spawnVehicleClient', src, npcConfig.vehicle, npcConfig.vehicleSpawnCoords, npcConfig.vehicleSpawnHeading)
 end)
-
 
 RegisterNetEvent('SkapHunting:sellAllItems')
 AddEventHandler('SkapHunting:sellAllItems', function()
@@ -178,9 +163,9 @@ AddEventHandler('SkapHunting:sellAllItems', function()
 
     if totalSale > 0 then
         Player.Functions.AddMoney(Config.Money, totalSale)  
-        TriggerClientEvent('QBCore:Notify', src, Config.Sold .. " " .. totalSale .. " " .. Config.Type, "success")
+        ServerNotify(src, Config.Sold .. " " .. totalSale .. " " .. Config.Type, "success")
     else
-        TriggerClientEvent('QBCore:Notify', src, Config.Donthave, "error")
+        ServerNotify(src, Config.Donthave, "error")
     end
 end)
 
@@ -189,6 +174,5 @@ AddEventHandler('SkapHunting:returnVehicle', function()
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     
-    -- Hantera logik för att returnera fordonet
     TriggerClientEvent('SkapHunting:returnVehicleClient', src)
 end)

@@ -6,27 +6,22 @@ Config.CommandsEnabled = true -- Want to be able to start and stop hunting via c
 Config.StartHuntingCommand = "starthunt"
 Config.StopHuntingCommand = "stophunt"
 
-Config.VehicleKeysMethod = "MrNewbVehicleKeys" -- "MrNewbVehicleKeys" "sk-keys" "qb-vehiclekeys"
+Config.VehicleKeysMethod = "sk-keys" -- Options: "MrNewbVehicleKeys" "sk-keys" "qb-vehiclekeys"
+
+Config.NotificationSystem = "ox" -- Options: "qb", "ox"
 
 Config.Money = "cash" -- Cash or Bank
 
 Config.LicensePrice = 1000 -- Hunting Licens price
 
-Config.JaktNPC = {
-    model = "ig_joeminuteman", coords = vector3(-674.56, 5838.95, 16.40), heading = 133.60, scenario = "WORLD_HUMAN_COP_IDLES"
-}
+Config.JaktNPC = { model = "ig_joeminuteman", coords = vector3(-674.56, 5838.95, 16.40), heading = 133.60, scenario = "WORLD_HUMAN_COP_IDLES" }
 
-Config.SellNPC = {
-    model = "u_m_o_taphillbilly", coords = vector3(-674.19, 5836.13, 16.40), heading = 72.32, scenario = "WORLD_HUMAN_AA_COFFEE"
-}
+Config.SellNPC = { model = "u_m_o_taphillbilly", coords = vector3(-674.19, 5836.13, 16.40), heading = 72.32, scenario = "WORLD_HUMAN_AA_COFFEE" }
 
-Config.LicensNPC = {
-    model = "s_m_m_snowcop_01", coords = vector3(446.79, -996.95, 29.69), heading = 269.39, scenario = "WORLD_HUMAN_AA_COFFEE"
-}
+Config.LicensNPC = { model = "s_m_m_snowcop_01", coords = vector3(-674.16, 5836.14, 17.40), heading = 52.50, scenario = "WORLD_HUMAN_AA_COFFEE" }
 
-Config.VehicleNPC = {
-    coords = vector3(-680.14, 5832.19, 16.33), heading = 98.84, model = "s_m_y_ammucity_01", scenario = "WORLD_HUMAN_GUARD_STAND",
-    vehicle = "futo", vehicleSpawnCoords = vector3(-690.0, 5825.0, 16.0), vehicleSpawnHeading = 90.0,
+Config.VehicleNPC = { coords = vector3(-680.14, 5832.19, 16.33), heading = 98.84, model = "s_m_y_ammucity_01", scenario = "WORLD_HUMAN_GUARD_STAND",
+    vehicle = "frr", vehicleSpawnCoords = vector3(-690.0, 5825.0, 16.0), vehicleSpawnHeading = 90.0,
 }
 
 Config.ParkingSpot = vector3(-681.91, 5831.72, 16.84)
