@@ -5,7 +5,7 @@ local animalBlips = {}
 local huntingZoneBlips = {}
 local spawnedAnimals = {}
 
-Citizen.CreateThread(function()
+CreateThread(function()
     spawnHuntingNPCs()
     spawnLicensNPCs()
     spawnVehicleNPC()
@@ -97,8 +97,7 @@ AddEventHandler('SkapHunting:spawnVehicleClient', function(vehicleModel, spawnCo
     elseif Config.VehicleKeysMethod == "qb-vehiclekeys" then
         TriggerEvent('vehiclekeys:client:SetOwner', QBCore.Functions.GetPlate(vehicle))
     elseif Config.VehicleKeysMethod == "MrNewbVehicleKeys" then
-        local boolean = true
-        exports.MrNewbVehicleKeys:ToggleTempKey(boolean)
+        exports.MrNewbVehicleKeys:GiveKeys(vehicle)
     end
 end)
 
@@ -106,8 +105,9 @@ RegisterNetEvent('SkapHunting:returnVehicleClient')
 AddEventHandler('SkapHunting:returnVehicleClient', function()
     local playerPed = PlayerPedId()
     local vehicle = GetVehiclePedIsIn(playerPed, false)
-    
+
     if vehicle and vehicle ~= 0 then
+        RemoveVehicleKeys(vehicle)
         DeleteVehicle(vehicle)
         Notify(Config.Returned, "success")
     else
@@ -115,8 +115,18 @@ AddEventHandler('SkapHunting:returnVehicleClient', function()
     end
 end)
 
+function RemoveVehicleKeys(vehicle)
+    if not DoesEntityExist(vehicle) then return end
+
+    if Config.VehicleKeysMethod == "qb-vehiclekeys" then
+        TriggerEvent('qb-vehiclekeys:client:RemoveKeys', QBCore.Functions.GetPlate(vehicle))
+    elseif Config.VehicleKeysMethod == "MrNewbVehicleKeys" then
+        exports.MrNewbVehicleKeys:RemoveKeys(vehicle)
+    end
+end
+
 function createHuntingZoneBlips()
-    removeHuntingZoneBlips() 
+    removeHuntingZoneBlips()
 
     for _, zone in pairs(Config.HuntingZones) do
         local blip = AddBlipForRadius(zone.coords, zone.radius)
@@ -165,9 +175,9 @@ function IsPlayerInHuntingZone()
     return false, nil
 end
 
-Citizen.CreateThread(function()
+CreateThread(function()
     while true do
-        Wait(1000) 
+        Wait(1000)
         if isHunting then
             local isInZone, zone = IsPlayerInHuntingZone()
             if isInZone and #spawnedAnimals == 0 then
@@ -207,7 +217,7 @@ function startHunting()
         spawnAnimalsInZone(zone)
     end
 
-    Citizen.CreateThread(function()
+    CreateThread(function()
         while isHunting do
             Wait(10000) 
         end
@@ -350,7 +360,7 @@ function skinAnimal(animalType, animal)
     end
 end
 
-Citizen.CreateThread(function()
+CreateThread(function()
     while true do
         local playerCoords = GetEntityCoords(PlayerPedId())
         local inHuntingZone = false
