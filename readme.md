@@ -1,3 +1,7 @@
+# SkapHunting
+
+Thanks to: https://github.com/Error420Unknown for the QBOX version!
+
 	hunting_license = {name = 'hunting_license', label = 'Jaktlicens', weight = 0, type = 'item', image = 'hunting_license.png', unique = true, useable = false, description = 'En licens som krävs för att jaga lagligt'},
 	meat = {name = 'meat', label = 'Kött', weight = 500, type = 'item', image = 'meat.png', unique = false, useable = false, description = 'Friskt kött från ett fällt djur'},
 	antlers = {name = 'antlers', label = 'Horn', weight = 300, type = 'item', image = 'antlers.png', unique = false, useable = false, description = 'Vackra horn från ett djur'},

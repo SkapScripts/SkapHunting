@@ -1,5 +1,14 @@
 Config = {}
 
+-- Framework option: 'QBOX' or 'QBCore'
+Config.Framework = 'QBCore' -- Change to 'QBCore' if using QBCore
+
+-- Notification system: 'qbx', 'qb', or 'ox'
+Config.NotificationSystem = 'qb'
+
+-- Target system: 'ox' for ox_target, 'qb' for qb-target
+Config.TargetSystem = 'qb'
+
 Config.Lang = "eng" -- "eng" for english, "swe" for swedish.
 
 Config.CommandsEnabled = true -- Want to be able to start and stop hunting via commands? Turn this to true
@@ -18,7 +27,7 @@ Config.JaktNPC = { model = "ig_joeminuteman", coords = vector3(-674.56, 5838.95,
 
 Config.SellNPC = { model = "u_m_o_taphillbilly", coords = vector3(-674.19, 5836.13, 16.40), heading = 72.32, scenario = "WORLD_HUMAN_AA_COFFEE" }
 
-Config.LicensNPC = { model = "s_m_m_snowcop_01", coords = vector3(-674.16, 5836.14, 17.40), heading = 52.50, scenario = "WORLD_HUMAN_AA_COFFEE" }
+Config.LicensNPC = { model = "s_m_m_snowcop_01", coords = vector3(444.96, -999.97, 37.72), heading = 1.28, scenario = "PROP_HUMAN_SEAT_CHAIR_DRINK" }
 
 Config.VehicleNPC = { coords = vector3(-680.14, 5832.19, 16.33), heading = 98.84, model = "s_m_y_ammucity_01", scenario = "WORLD_HUMAN_GUARD_STAND",
     vehicle = "frr", vehicleSpawnCoords = vector3(-690.0, 5825.0, 16.0), vehicleSpawnHeading = 90.0,

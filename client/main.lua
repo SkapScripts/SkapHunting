@@ -1,5 +1,21 @@
 local QBCore = exports['qb-core']:GetCoreObject()
+local Framework = Config.Framework
 local Player = QBCore.Functions.GetPlayerData()
+local QBCore, QBX
+local Player
+local isHunting = false
+local animalBlips = {}
+local huntingZoneBlips = {}
+local spawnedAnimals = {}
+
+if Framework == 'QBCore' then
+    QBCore = exports['qb-core']:GetCoreObject()
+    Player = QBCore.Functions.GetPlayerData()
+elseif Framework == 'QBOX' then
+    QBX = exports.qbx_core
+    Player = QBX.PlayerData()
+end
+
 local isHunting = false
 local animalBlips = {}
 local huntingZoneBlips = {}
@@ -12,23 +28,21 @@ CreateThread(function()
 end)
 
 local function GeneratePlate()
-    local plate = QBCore.Shared.RandomInt(1) .. QBCore.Shared.RandomStr(3) .. QBCore.Shared.RandomInt(3) .. QBCore.Shared.RandomStr(0)
-    return plate:upper()
+    if Framework == 'QBCore' then
+        return QBCore.Shared.RandomInt(1) .. QBCore.Shared.RandomStr(3) .. QBCore.Shared.RandomInt(3) .. QBCore.Shared.RandomStr(0)
+    else
+        return QBX.Shared.RandomInt(1) .. QBX.Shared.RandomStr(3) .. QBX.Shared.RandomInt(3) .. QBX.Shared.RandomStr(0)
+    end
 end
 
 local function Notify(message, type)
-    if Config.NotificationSystem == "qb" then
+    if Config.NotificationSystem == "qbx" and Framework == "QBOX" then
+        exports.qbx_core:Notify(message, type, 5000)
+    elseif Config.NotificationSystem == "qb" and Framework == "QBCore" then
         QBCore.Functions.Notify(message, type)
     elseif Config.NotificationSystem == "ox" then
         exports['ox_lib']:notify({description = message, type = type})
     end
-end
-
-function removeHuntingZoneBlips()
-    for _, blip in ipairs(huntingZoneBlips) do
-        RemoveBlip(blip)
-    end
-    huntingZoneBlips = {}
 end
 
 function spawnVehicleNPC()
@@ -47,35 +61,42 @@ function spawnVehicleNPC()
         TaskStartScenarioInPlace(vehiclePed, npcConfig.scenario, 0, true)
     end
 
-    exports['qb-target']:AddTargetEntity(vehiclePed, {
-        options = {
+    if Config.TargetSystem == "ox" then
+        exports.ox_target:addEntity(vehiclePed, {
             {
+                icon = 'fas fa-car',
                 label = Config.takeOutVehicle,
-                action = function() TriggerServerEvent('SkapHunting:spawnVehicle') end,
-                icon = "fas fa-car",
-                job = "all",
+                onSelect = function()
+                    TriggerServerEvent('SkapHunting:spawnVehicle')
+                end,
+                distance = 1.5
             },
             {
+                icon = 'fas fa-car-crash',
                 label = Config.returnVehicles,
-                action = function() 
+                onSelect = function()
                     TriggerServerEvent('SkapHunting:returnVehicle')
                 end,
-                icon = "fas fa-car-crash",
-                job = "all",
+                distance = 1.5
+            }
+        })
+    elseif Config.TargetSystem == "qb" then
+        exports['qb-target']:AddTargetEntity(vehiclePed, {
+            options = {
+                {
+                    label = Config.takeOutVehicle,
+                    action = function() TriggerServerEvent('SkapHunting:spawnVehicle') end,
+                    icon = "fas fa-car",
+                },
+                {
+                    label = Config.returnVehicles,
+                    action = function() TriggerServerEvent('SkapHunting:returnVehicle') end,
+                    icon = "fas fa-car-crash",
+                },
             },
-        },
-        distance = 2.5
-    })
-
-    local vehicleBlip = AddBlipForCoord(npcConfig.coords.x, npcConfig.coords.y, npcConfig.coords.z)
-    SetBlipSprite(vehicleBlip, 225)
-    SetBlipDisplay(vehicleBlip, 4)
-    SetBlipScale(vehicleBlip, 0.8)
-    SetBlipColour(vehicleBlip, 2)
-    SetBlipAsShortRange(vehicleBlip, true)
-    BeginTextCommandSetBlipName("STRING")
-    AddTextComponentString(Config.Vehicle)
-    EndTextCommandSetBlipName(vehicleBlip)
+            distance = 2.5
+        })
+    end
 end
 
 RegisterNetEvent('SkapHunting:spawnVehicleClient')
@@ -95,7 +116,7 @@ AddEventHandler('SkapHunting:spawnVehicleClient', function(vehicleModel, spawnCo
     if Config.VehicleKeysMethod == "sk-keys" then
         exports['sk-keys']:givetemporary(plate)
     elseif Config.VehicleKeysMethod == "qb-vehiclekeys" then
-        TriggerEvent('vehiclekeys:client:SetOwner', QBCore.Functions.GetPlate(vehicle))
+        TriggerEvent('vehiclekeys:client:SetOwner', GetVehicleNumberPlateText(vehicle))
     elseif Config.VehicleKeysMethod == "MrNewbVehicleKeys" then
         exports.MrNewbVehicleKeys:GiveKeys(vehicle)
     end
@@ -105,9 +126,8 @@ RegisterNetEvent('SkapHunting:returnVehicleClient')
 AddEventHandler('SkapHunting:returnVehicleClient', function()
     local playerPed = PlayerPedId()
     local vehicle = GetVehiclePedIsIn(playerPed, false)
-
+    
     if vehicle and vehicle ~= 0 then
-        RemoveVehicleKeys(vehicle)
         DeleteVehicle(vehicle)
         Notify(Config.Returned, "success")
     else
@@ -115,18 +135,8 @@ AddEventHandler('SkapHunting:returnVehicleClient', function()
     end
 end)
 
-function RemoveVehicleKeys(vehicle)
-    if not DoesEntityExist(vehicle) then return end
-
-    if Config.VehicleKeysMethod == "qb-vehiclekeys" then
-        TriggerEvent('qb-vehiclekeys:client:RemoveKeys', QBCore.Functions.GetPlate(vehicle))
-    elseif Config.VehicleKeysMethod == "MrNewbVehicleKeys" then
-        exports.MrNewbVehicleKeys:RemoveKeys(vehicle)
-    end
-end
-
 function createHuntingZoneBlips()
-    removeHuntingZoneBlips()
+    removeHuntingZoneBlips() 
 
     for _, zone in pairs(Config.HuntingZones) do
         local blip = AddBlipForRadius(zone.coords, zone.radius)
@@ -175,9 +185,9 @@ function IsPlayerInHuntingZone()
     return false, nil
 end
 
-CreateThread(function()
+Citizen.CreateThread(function()
     while true do
-        Wait(1000)
+        Wait(1000) 
         if isHunting then
             local isInZone, zone = IsPlayerInHuntingZone()
             if isInZone and #spawnedAnimals == 0 then
@@ -217,7 +227,7 @@ function startHunting()
         spawnAnimalsInZone(zone)
     end
 
-    CreateThread(function()
+    Citizen.CreateThread(function()
         while isHunting do
             Wait(10000) 
         end
@@ -241,12 +251,14 @@ function spawnAnimalsInZone(zone)
     for i = 1, Config.MaxAnimalSpawns do
         local randomX, randomY, spawnCoords
 
+        -- Ensure animals don't spawn too close to the player
         repeat
             randomX = math.random(-zone.radius, zone.radius)
             randomY = math.random(-zone.radius, zone.radius)
             spawnCoords = vector3(zone.coords.x + randomX, zone.coords.y + randomY, zone.minZ)
         until #(playerCoords - spawnCoords) > 50.0 and (randomX^2 + randomY^2) <= zone.radius^2
 
+        -- Ground check to prevent animals spawning in the air
         local foundGround, groundZ = GetGroundZFor_3dCoord(spawnCoords.x, spawnCoords.y, zone.maxZ)
         if foundGround then
             spawnCoords = vector3(spawnCoords.x, spawnCoords.y, groundZ)
@@ -274,6 +286,7 @@ function spawnAnimalsInZone(zone)
 
                 local animal = CreatePed(5, animalModel, spawnCoords.x, spawnCoords.y, spawnCoords.z, 0.0, true, true)
 
+                -- Create blip for the animal
                 local animalBlip = AddBlipForEntity(animal)
                 SetBlipSprite(animalBlip, 141)
                 SetBlipDisplay(animalBlip, 4)
@@ -360,7 +373,7 @@ function skinAnimal(animalType, animal)
     end
 end
 
-CreateThread(function()
+Citizen.CreateThread(function()
     while true do
         local playerCoords = GetEntityCoords(PlayerPedId())
         local inHuntingZone = false
